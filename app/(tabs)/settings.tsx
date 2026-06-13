@@ -1,25 +1,10 @@
-import { View, StyleSheet, Text} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SettingsScreen from "../../components/settings";
 
-export default function SettingsScreen(){
+export default function Settings(){
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View>
-        <Text>Settings Screen</Text>
-      </View>
+      <SettingsScreen />
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-});

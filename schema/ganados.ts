@@ -1,8 +1,8 @@
 import { getDatabase } from "./db";
 
-export async function getGanados(){
+export async function getGanados({limit = 10} = {limit: 10}){
     const db = await getDatabase();
-    const result = await db.getAllAsync("SELECT * FROM ganados");
+    const result = await db.getAllAsync("SELECT * FROM ganados LIMIT ?", [limit]);
     return result;
 }
 

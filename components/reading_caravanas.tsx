@@ -15,6 +15,7 @@ import ExportDataModal from "./export_data";
 import { createProductor } from "../schema/productores";
 import { createGanados } from "../schema/ganados";
 import { useSheetName } from "../context/sheetNameContext";
+import { useRefreshDB } from "@/context/refreshDBContext";
 
 export default function ReadingScreen({
   sessionActive,
@@ -31,7 +32,9 @@ export default function ReadingScreen({
   const [showSexModal, setShowSexModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const { sheetName, setSheetName } = useSheetName();
+  const { sheetName } = useSheetName();
+
+  const { triggerRefresh } = useRefreshDB();
 
   const [readings, setReadings] = useState<
     { id: string; caravana: string; sexo: string }[]
@@ -84,6 +87,8 @@ export default function ReadingScreen({
     setShowSexModal(true);
 
     setCaravan("");
+
+    triggerRefresh();
   };
 
   return (

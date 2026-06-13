@@ -5,7 +5,8 @@ import CreateSessionForm from "../../components/new_session";
 import ReadingScreen from "../../components/reading_caravanas";
 import { useState, useEffect } from "react";
 import { SheetNameProvider } from "../../context/sheetNameContext";
-import { initializeDatabase } from "../../schema/initialize"
+import { RefreshDBProvider } from "../../context/refreshDBContext";
+import { initializeDatabase } from "../../schema/initialize";
 
 export default function HomeScreen() {
   const [sessionActive, setSessionActive] = useState(false);
@@ -16,20 +17,22 @@ export default function HomeScreen() {
 
   return (
     <SheetNameProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.container}>
-          <CreateSessionForm
-            onStartSession={() => {
-              setSessionActive(true);
-            }}
-          />
-          <LastCaravansRead />
-          <ReadingScreen
-            sessionActive={sessionActive}
-            setSessionActive={setSessionActive}
-          />
-        </View>
-      </SafeAreaView>
+      <RefreshDBProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={styles.container}>
+            <CreateSessionForm
+              onStartSession={() => {
+                setSessionActive(true);
+              }}
+            />
+            <LastCaravansRead />
+            <ReadingScreen
+              sessionActive={sessionActive}
+              setSessionActive={setSessionActive}
+            />
+          </View>
+        </SafeAreaView>
+      </RefreshDBProvider>
     </SheetNameProvider>
   );
 }

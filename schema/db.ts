@@ -10,3 +10,13 @@ export async function getDatabase(){
     return db
 }
 
+export async function cleanDatabase(){
+    const db = await getDatabase();
+    await db.execAsync("DELETE FROM ganados");
+    await db.execAsync("DELETE FROM productores");
+}
+
+export async function closeDatabase(){
+    const db = await getDatabase();
+    await db.closeAsync();
+}

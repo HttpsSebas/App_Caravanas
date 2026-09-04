@@ -8,7 +8,7 @@ type Props = {
 
 export default function CreateSessionForm({ onStartSession }: Props) {
   const [sessionName, setSessionName] = useState("");
-  const { sheetName, setSheetName } = useSheetName();
+  const { setSheetName } = useSheetName();
 
   const handleSubmit = () => {
     if (!sessionName.trim()) return;

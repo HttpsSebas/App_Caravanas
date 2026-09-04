@@ -4,7 +4,6 @@ import * as Sharing from "expo-sharing";
 
 export async function export_excel({data, sheetName, fileName}) {
     try{
-        console.log(data)
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, sheetName);

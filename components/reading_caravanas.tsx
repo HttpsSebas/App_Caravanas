@@ -10,12 +10,15 @@ import {
 } from "react-native";
 import { useRef, useState } from "react";
 import * as Crypto from "expo-crypto";
-import SexModal from "./sex_modal";
+import SexRadio from "./sex_radio";
 import ExportDataModal from "./export_data";
-import { createProductor } from "../schema/productores";
-import { createGanados } from "../schema/ganados";
+import ObservationModal from "./observation_modal";
+import { insertData } from "../schema/initialize";
 import { useSheetName } from "../context/sheetNameContext";
-import { useRefreshDB } from "@/context/refreshDBContext";
+import { useRefreshDB } from "../context/refreshDBContext";
+import GanadoCard from "./ganado_card";
+import { useSQLiteContext } from "expo-sqlite";
+import infoAlert from "./infoAlert";
 
 export default function ReadingScreen({
   sessionActive,
@@ -26,42 +29,68 @@ export default function ReadingScreen({
 }) {
   const inputRef = useRef<TextInput>(null);
   const processingRef = useRef(false);
+  const caravanaRef = useRef("");
+
+  const { setRefresh } = useRefreshDB();
+
+  const db = useSQLiteContext();
 
   const [caravana, setCaravan] = useState("");
-  const [pendingCaravan, setPendingCaravan] = useState("");
-  const [showSexModal, setShowSexModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [sex, setSex] = useState("macho");
+  const [showObservationModal, setShowObservationModal] = useState(false);
+  const [observation, setObservation] = useState("");
+  const [selectedGanadoId, setSelectedGanadoId] = useState<string | null>(null);
 
   const { sheetName } = useSheetName();
 
-  const { triggerRefresh } = useRefreshDB();
-
   const [readings, setReadings] = useState<
-    { id: string; caravana: string; sexo: string }[]
+    { id: string; caravana: string; sexo: string; observaciones: string }[]
   >([]);
 
-  const saveReading = (sexo: string) => {
+  const editGanado = () => {
+    if (selectedGanadoId === null) {
+      infoAlert("Error", "Seleccione un ganado");
+      return;
+    }
+
+    setReadings((prev) =>
+      prev.map((ganado) =>
+        ganado.id === selectedGanadoId
+          ? { ...ganado, observaciones: observation }
+          : ganado,
+      ),
+    );
+    setObservation("");
+    setSelectedGanadoId(null);
+    setShowObservationModal(false);
+  };
+
+  const saveReading = () => {
+    if (selectedGanadoId !== null) {
+      editGanado();
+      return;
+    }
+
     setReadings((prev) => {
-      if (prev.some((r) => r.caravana === pendingCaravan)) {
-        Alert.alert(
-          "Caravana ya leída",
-          `La caravana ${pendingCaravan} ya fue leída en esta sesión.`,
-        );
+      if (prev.some((r) => r.caravana === caravana)) {
+        infoAlert("Caravana duplicada", "La caravana ya está en la sesión");
         return prev;
       }
 
       return [
         {
           id: Crypto.randomUUID(),
-          caravana: pendingCaravan,
-          sexo,
+          caravana: caravana,
+          sexo: sex,
+          observaciones: observation,
         },
         ...prev,
       ];
     });
 
-    setShowSexModal(false);
-    setPendingCaravan("");
+    setObservation("");
+    setShowObservationModal(false);
 
     setTimeout(() => {
       processingRef.current = false;
@@ -71,24 +100,46 @@ export default function ReadingScreen({
 
   const handleRead = () => {
     if (processingRef.current) return;
-
     processingRef.current = true;
 
-    const value = caravana.trim();
+    setTimeout(() => {
+      const value = caravanaRef.current.trim();
+      caravanaRef.current = "";
 
-    console.log("Reading caravan:", value);
+      if (!value) {
+        processingRef.current = false;
+        return;
+      }
 
-    if (!value) {
-      processingRef.current = false;
-      return;
+      setCaravan("");
+
+      setTimeout(() => {
+        processingRef.current = false;
+        inputRef.current?.focus();
+      }, 100);
+
+      saveReading();
+    }, 100);
+  };
+
+  const handleFinishSession = async () => {
+    try {
+      setSessionActive(false);
+
+      const res = await insertData({ db, sheetName, readings });
+
+      if (!res.ok) {
+        infoAlert("Error", res.message);
+        return;
+      }
+
+      setShowExportModal(true);
+      infoAlert("Sesión guardada", res.message);
+
+      setRefresh((prev: number) => prev + 1);
+    } catch (error) {
+      infoAlert("Error", "Error guardando la sesión");
     }
-
-    setPendingCaravan(value);
-    setShowSexModal(true);
-
-    setCaravan("");
-
-    triggerRefresh();
   };
 
   return (
@@ -99,11 +150,18 @@ export default function ReadingScreen({
 
           <Text style={styles.counter}>Lecturas: {readings.length}</Text>
 
+          <SexRadio sex={sex} setSex={setSex} />
+
           <TextInput
             ref={inputRef}
             value={caravana}
-            onChangeText={setCaravan}
+            onChangeText={(text) => {
+              const cleanedText = text.replace(/\D/g, "");
+              setCaravan(cleanedText);
+              caravanaRef.current = cleanedText;
+            }}
             onSubmitEditing={handleRead}
+            keyboardType="numeric"
             autoFocus
             placeholder="Esperando lectura..."
             style={styles.input}
@@ -113,37 +171,48 @@ export default function ReadingScreen({
             data={readings}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={styles.row}>
-                <Text>{item.caravana}</Text>
-                <Text>{item.sexo}</Text>
-              </View>
+              <Pressable
+                onPress={() => {
+                  setSelectedGanadoId(item.id);
+                  setShowObservationModal(true);
+                  setObservation(item.observaciones);
+                }}
+                style={styles.row}
+              >
+                <GanadoCard
+                  caravana={item.caravana}
+                  sexo={item.sexo}
+                  observaciones={item.observaciones}
+                />
+              </Pressable>
             )}
           />
 
-          <Pressable
-            style={styles.finishButton}
-            onPress={async () => {
-              setSessionActive(false);
-              setShowExportModal(true);
-              const productorId = await createProductor(sheetName);
-              await createGanados(readings.map(({ caravana, sexo }) => ({ caravana_id: caravana, sexo, productor_id: productorId })));
-            }}
-          >
+          <ObservationModal
+            showObservationModal={showObservationModal}
+            onSave={saveReading}
+            observation={observation}
+            setObservation={setObservation}
+          />
+
+          <Pressable style={styles.finishButton} onPress={handleFinishSession}>
             <Text style={styles.finishText}>Terminar Sesión</Text>
           </Pressable>
         </View>
       </Modal>
 
-      <SexModal showSexModal={showSexModal} saveReading={saveReading} />
-
-      <ExportDataModal 
-       visible={showExportModal} 
-       onClose={() => {
+      <ExportDataModal
+        visible={showExportModal}
+        onClose={() => {
           setShowExportModal(false);
           setReadings([]);
-       }} 
-       data={readings.map(({ caravana, sexo }) => ({ Caravana: caravana, Sexo: sexo }))}
-       />
+        }}
+        data={readings.map(({ caravana, sexo, observaciones }) => ({
+          Caravana: caravana,
+          Sexo: sexo,
+          Observaciones: observaciones,
+        }))}
+      />
     </>
   );
 }
@@ -194,5 +263,4 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-
 });

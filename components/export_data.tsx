@@ -15,7 +15,7 @@ export default function ExportDataModal({
   const { sheetName } = useSheetName();
   const handleExport = async () => {
     try {
-        await export_excel({data, sheetName, fileName: "Lecturas"});
+        await export_excel({data, sheetName, fileName: sheetName});
     } catch (error) {
         throw error;
     } finally {

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Frontend",
-    "slug": "Frontend",
-    "version": "1.0.0",
+    "name": "Lector_Caravanas",
+    "slug": "Lector_Caravanas",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,8 +18,15 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "edgeToEdgeEnabled": false,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ],
+      "package": "com.sebaexpo.Lector_Caravanas",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -46,12 +53,17 @@
           }
         }
       ],
-      "expo-sqlite",
-      "expo-file-system"
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f8545d7f-b0e5-4e8b-89af-4e6d20335ed1"
+      }
     }
   }
 }

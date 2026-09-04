@@ -1,22 +1,30 @@
-import 'react-native-reanimated';
-import { Stack } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-
+import "react-native-reanimated";
+import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SheetNameProvider } from "../context/sheetNameContext";
+import RefreshDataProvider from "../context/refreshDBContext";
+import { SQLiteProvider } from "expo-sqlite";
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: "(tabs)",
 };
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}>
-      <Stack.Screen name="(tabs)" />
-    </Stack>
-
+      <SQLiteProvider databaseName={"ganados.db"}>
+        <RefreshDataProvider>
+          <SheetNameProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </SheetNameProvider>
+        </RefreshDataProvider>
+      </SQLiteProvider>
     </SafeAreaProvider>
   );
 }

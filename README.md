@@ -15,7 +15,6 @@ The project was developed to provide a mobile interface for managing and accessi
 * . Integration with local database (offline usage)
 * . Data retrieval and management
 * . Android APK support
-* . Environment-based configuration
 * . Modular project structure
 
 ---

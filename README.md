@@ -8,7 +8,7 @@ The project was developed to provide a mobile interface for managing and accessi
 
 ---
 
-##.. Features
+## Features
 
 * . Android mobile application using React Native
 * . Built with Expo
@@ -20,7 +20,7 @@ The project was developed to provide a mobile interface for managing and accessi
 
 ---
 
-##.. Tech Stack
+## Tech Stack
 
 ### Mobile
 
@@ -42,7 +42,7 @@ The mobile application communicates with a local database
 
 ---
 
-##.. Architecture
+## Architecture
 
 The application follows a client-server architecture:
 
@@ -67,7 +67,7 @@ The mobile application is responsible for the presentation layer and communicati
 
 ---
 
-##.. Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -80,7 +80,7 @@ Make sure you have installed:
 
 ---
 
-##.. Installation
+## Installation
 
 Clone the repository:
 
@@ -96,7 +96,7 @@ npm install
 
 ---
 
-##.. Running the Application
+## Running the Application
 
 Start the Expo development server:
 
@@ -123,7 +123,7 @@ npx expo start
 
 ---
 
-##.. Android APK
+## Android APK
 
 The project can also be compiled into an Android APK for direct installation on an Android device.
 
@@ -139,7 +139,7 @@ Depending on the EAS configuration, this can generate an APK suitable for testin
 
 ---
 
-##.. Backend Integration
+## Backend Integration
 
 Caravanas App communicates with the backend through DB queries.
 
@@ -149,7 +149,7 @@ The mobile application acts as the client while the backend handles the applicat
 
 ---
 
-##.. Testing
+## Testing
 
 To run the project locally:
 
@@ -170,13 +170,13 @@ Also make sure that:
 
 ---
 
-##.. Future Improvements
+## Future Improvements
 
 Possible future improvements will be attached to customer needs
 
 ---
 
-##.. What I Learned
+## What I Learned
 
 This project provided practical experience working with:
 
@@ -191,7 +191,7 @@ This project provided practical experience working with:
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 **Sebastian Infante**
 
@@ -199,7 +199,7 @@ Backend Developer in training, focused on building practical applications and le
 
 ---
 
-## 📄 License
+## License
 
 This project is available for educational and portfolio purposes.
 

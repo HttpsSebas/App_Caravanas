@@ -7,8 +7,8 @@ import { IconSymbol } from "./ui/icon-symbol";
 import ExportDataModal from "./export_data";
 import { useRefreshDB } from "../context/refreshDBContext";
 import { useSQLiteContext } from "expo-sqlite";
-import ObservationModal from "./observation_modal";
-import { updateGanado } from "../schema/ganados";
+import GanadoActions from "./ganado_actions_modal";
+import { updateGanado, deleteGanado } from "../schema/ganados";
 import infoAlert from "./infoAlert";
 
 type SessionItemProps = {
@@ -19,6 +19,13 @@ type SessionItemProps = {
 };
 
 export default function SessionItem({ session }: SessionItemProps) {
+  type Ganado = {
+    id: string;
+    caravana_id: string;
+    sexo: string;
+    observaciones: string;
+  };
+
   const [openSessionData, setOpenSessionData] = useState(false);
   const [sessionData, setSessionData] = useState([]);
 
@@ -27,25 +34,24 @@ export default function SessionItem({ session }: SessionItemProps) {
   const { refresh, setRefresh } = useRefreshDB();
 
   const [exportModalVisible, setExportModalVisible] = useState(false);
-  const [observationModalVisible, setObservationModalVisible] = useState(false);
-  const [selectedGanadoId, setSelectedGanadoId] = useState<number | null>(null);
-  const [observaciones, setObservaciones] = useState("");
+  const [actionsModalVisible, setActionsModalVisible] = useState(false);
+  const [selectedGanado, setSelectedGanado] = useState<Ganado | null>(null);
   const date = new Date(session.session_date);
 
-  const updateObservation = async () => {
-    if (selectedGanadoId === null) {
+  const updateGanadoData = async () => {
+    if (selectedGanado === null) {
       infoAlert("Error", "Seleccione un ganado");
       return;
     }
     const updatedGanado = sessionData.map((ganado: any) => {
-      if (ganado.id !== selectedGanadoId) {
-        return ganado
+      if (ganado.id !== selectedGanado.id) {
+        return ganado;
       }
       return {
         ...ganado,
-        observaciones
-      }
-    })
+        ...selectedGanado,
+      };
+    });
     const res = await updateGanado({ db, data: updatedGanado });
     if (!res.ok) {
       infoAlert("Error", "Error actualizando el ganado");
@@ -53,9 +59,49 @@ export default function SessionItem({ session }: SessionItemProps) {
     }
     setSessionData(updatedGanado);
     setRefresh((prev: number) => prev + 1);
-    setObservationModalVisible(false);
-    setObservaciones("");
-    setSelectedGanadoId(null);
+    setActionsModalVisible(false);
+    setSelectedGanado(null);
+  };
+
+  const handleDelete = async () => {
+    if (selectedGanado === null) {
+      infoAlert("Error", "Seleccione un ganado");
+      return;
+    }
+
+    const res = await deleteGanado({
+      db,
+      caravana_id: selectedGanado.caravana_id,
+    });
+    if (!res.ok) {
+      infoAlert("Error", res.message || "Error eliminando el ganado");
+      return;
+    }
+
+    setSessionData((prev) =>
+      prev.filter((ganado: any) => ganado.id !== selectedGanado.id),
+    );
+
+    setActionsModalVisible(false);
+    setSelectedGanado(null);
+    setRefresh((prev: number) => prev + 1);
+  };
+
+  const handleEditData = async (data: any) => {
+    if (selectedGanado === null) {
+      infoAlert("Error", "Seleccione un ganado");
+      return;
+    }
+
+    setSelectedGanado((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        ...data,
+        observaciones: data.observaciones,
+        sexo: data.sexo,
+      };
+    });
   };
 
   useEffect(() => {
@@ -97,9 +143,8 @@ export default function SessionItem({ session }: SessionItemProps) {
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => {
-                  setSelectedGanadoId(item.id);
-                  setObservationModalVisible(true);
-                  setObservaciones(item.observaciones);
+                  setSelectedGanado(item);
+                  setActionsModalVisible(true);
                 }}
               >
                 <GanadoCard
@@ -110,14 +155,18 @@ export default function SessionItem({ session }: SessionItemProps) {
               </Pressable>
             )}
           />
-
-          <ObservationModal
-            showObservationModal={observationModalVisible}
-            onSave={updateObservation}
-            observation={observaciones}
-            setObservation={setObservaciones}
-          />
         </View>
+      )}
+
+      {selectedGanado && (
+        <GanadoActions
+          showGanadoModal={actionsModalVisible}
+          onSave={updateGanadoData}
+          onDelete={handleDelete}
+          onClose={() => setActionsModalVisible(false)}
+          data={selectedGanado}
+          setData={handleEditData}
+        />
       )}
 
       {exportModalVisible && (
@@ -127,7 +176,7 @@ export default function SessionItem({ session }: SessionItemProps) {
           data={sessionData.map((item) => ({
             caravana: item.caravana_id,
             sexo: item.sexo,
-            observaciones: item.observaciones
+            observaciones: item.observaciones,
           }))}
         />
       )}

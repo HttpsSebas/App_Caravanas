@@ -3,7 +3,7 @@ export async function getSessions(db: any) {
     const sessions = await db.getAllAsync(
       "SELECT DISTINCT name FROM sessions ORDER BY session_date DESC",
     );
-    return sessions;
+    return sessions || [];
   } catch (e) {
     throw new Error("Error getting sessions");
   }
@@ -36,9 +36,9 @@ export async function getSessionsByDate({
     }
 
     const sessions = await db.getAllAsync(query, params);
-    return sessions;
+    return sessions || [];
   } catch (e) {
-    throw new Error("Error getting sessions by date");
+    return [];
   }
 }
 

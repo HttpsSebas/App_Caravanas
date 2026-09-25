@@ -41,7 +41,7 @@ export async function initializeDatabase(db: any) {
 }
 
 type Reading = {
-  caravana: string;
+  caravana_id: string;
   sexo: string;
   observaciones: string;
 };
@@ -65,8 +65,8 @@ export async function insertData({ db, sheetName, readings }: InsertDataParams) 
 
       await createGanados({
         db,
-        data: readings.map(({ caravana, sexo, observaciones }) => ({
-          caravana_id: caravana,
+        data: readings.map(({ caravana_id, sexo, observaciones }) => ({
+          caravana_id,
           sexo,
           observaciones,
           productor_id: productorId,
@@ -75,9 +75,9 @@ export async function insertData({ db, sheetName, readings }: InsertDataParams) 
 
       await createSessionGanados({
         db,
-        data: readings.map(({ caravana }) => ({
+        data: readings.map(({ caravana_id }) => ({
           session_id: sessionId,
-          caravana_id: caravana,
+          caravana_id: caravana_id,
         })),
       });
     });

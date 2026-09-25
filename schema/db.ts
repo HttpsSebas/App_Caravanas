@@ -1,7 +1,5 @@
 import * as SQLite from "expo-sqlite";
 
-let db: SQLite.SQLiteDatabase | null = null;
-
 export async function cleanDatabase(db: any) {
   try {
     await db.execAsync("DELETE FROM ganados");

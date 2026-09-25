@@ -4,7 +4,7 @@ export async function getProductores(db: any) {
     const productores = await db.getAllAsync(
       "SELECT * FROM productores ORDER BY nombre",
     );
-    return productores;
+    return productores || [];
   } catch (e) {
     throw new Error("Error getting productores");
   }
@@ -16,7 +16,7 @@ export async function getProductorById(id: number, db: any) {
       "SELECT * FROM productores WHERE id = ?",
       [id],
     );
-    return productor;
+    return productor || null;
   } catch (e) {
     throw new Error("Error getting productor by id");
   }

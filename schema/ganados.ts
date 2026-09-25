@@ -1,9 +1,11 @@
+import { deleteSessionGanadoByCaravana } from "./session_ganados";
+
 export async function getGanados({ limit = 10, db } = { limit: 10, db: null }) {
   try {
     const result = await db.getAllAsync("SELECT * FROM ganados LIMIT ?", [
       limit,
     ]);
-    return result;
+    return result || [];
   } catch (e) {
     throw new Error("Error getting ganados");
   }
@@ -15,7 +17,7 @@ export async function getGanado(id: string, { db } = { db: null }) {
       "SELECT * FROM ganados WHERE caravana_id = ?",
       [id],
     );
-    return result;
+    return result || null;
   } catch (e) {
     throw new Error("Error getting ganado");
   }
@@ -54,24 +56,47 @@ export async function updateGanado({
     caravana_id: string;
     sexo: string;
     observaciones: string;
-    productor_id: number;
   }>;
 }) {
   try {
-    for (const { caravana_id, sexo, observaciones, productor_id } of data) {
+    for (const { caravana_id, sexo, observaciones} of data) {
       await db.runAsync(
-        "UPDATE ganados SET sexo = ?, observaciones = ?, productor_id = ? WHERE caravana_id = ?",
-        [sexo, observaciones, productor_id, caravana_id],
+        "UPDATE ganados SET caravana_id = ?, sexo = ?, observaciones = ? WHERE caravana_id = ?",
+        [caravana_id, sexo, observaciones, caravana_id],
       );
     }
     return {
       ok: true,
       message: "Ganado actualizado con éxito",
-    }
+    };
   } catch (e) {
     return {
       ok: false,
       message: "Error actualizando el ganado",
-    }
+    };
+  }
+}
+
+export async function deleteGanado({
+  db,
+  caravana_id,
+}: {
+  db: any;
+  caravana_id: string;
+}) {
+  try {
+    await deleteSessionGanadoByCaravana({ caravana_id, db });
+    await db.runAsync("DELETE FROM ganados WHERE caravana_id = ?", [
+      caravana_id,
+    ]);
+    return {
+      ok: true,
+      message: "Ganado eliminado con éxito",
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      message: "Error eliminando el ganado",
+    };
   }
 }

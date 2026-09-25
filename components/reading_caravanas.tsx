@@ -6,19 +6,19 @@ import {
   Pressable,
   StyleSheet,
   Modal,
-  Alert,
 } from "react-native";
 import { useRef, useState } from "react";
 import * as Crypto from "expo-crypto";
 import SexRadio from "./sex_radio";
 import ExportDataModal from "./export_data";
-import ObservationModal from "./observation_modal";
+import GanadoActions from "./ganado_actions_modal";
 import { insertData } from "../schema/initialize";
 import { useSheetName } from "../context/sheetNameContext";
 import { useRefreshDB } from "../context/refreshDBContext";
 import GanadoCard from "./ganado_card";
 import { useSQLiteContext } from "expo-sqlite";
 import infoAlert from "./infoAlert";
+import { read } from "xlsx";
 
 export default function ReadingScreen({
   sessionActive,
@@ -29,7 +29,14 @@ export default function ReadingScreen({
 }) {
   const inputRef = useRef<TextInput>(null);
   const processingRef = useRef(false);
-  const caravanaRef = useRef("");
+
+
+  type Ganado = {
+    id: string;
+    caravana_id: string;
+    sexo: string;
+    observaciones: string;
+  };
 
   const { setRefresh } = useRefreshDB();
 
@@ -38,42 +45,52 @@ export default function ReadingScreen({
   const [caravana, setCaravan] = useState("");
   const [showExportModal, setShowExportModal] = useState(false);
   const [sex, setSex] = useState("macho");
-  const [showObservationModal, setShowObservationModal] = useState(false);
-  const [observation, setObservation] = useState("");
-  const [selectedGanadoId, setSelectedGanadoId] = useState<string | null>(null);
+  const [showGanadoActions, setShowGanadoActions] = useState(false);
+  const [selectedGanado, setSelectedGanado] = useState<Ganado | null>(null);
 
   const { sheetName } = useSheetName();
 
-  const [readings, setReadings] = useState<
-    { id: string; caravana: string; sexo: string; observaciones: string }[]
-  >([]);
+  const [readings, setReadings] = useState<Ganado[]>([]);
 
   const editGanado = () => {
-    if (selectedGanadoId === null) {
+    if (!selectedGanado) {
       infoAlert("Error", "Seleccione un ganado");
       return;
     }
 
     setReadings((prev) =>
-      prev.map((ganado) =>
-        ganado.id === selectedGanadoId
-          ? { ...ganado, observaciones: observation }
-          : ganado,
-      ),
+      prev.map((g) => {
+        if (g.id === selectedGanado.id) {
+          return {
+            ...g,
+            caravana_id: selectedGanado.caravana_id,
+            sexo: selectedGanado.sexo,
+            observaciones: selectedGanado.observaciones,
+          };
+        }
+        return g;
+      }),
     );
-    setObservation("");
-    setSelectedGanadoId(null);
-    setShowObservationModal(false);
+    setSelectedGanado(null);
+    setShowGanadoActions(false);
   };
 
-  const saveReading = () => {
-    if (selectedGanadoId !== null) {
+  const saveReading = (reading: string) => {
+    if (reading.length === 0) {
+      processingRef.current = false;
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (selectedGanado) {
       editGanado();
       return;
     }
 
+    const cleanedText = reading.replace(/\D/g, "");
+
     setReadings((prev) => {
-      if (prev.some((r) => r.caravana === caravana)) {
+      if (prev.some((r) => r.caravana_id === cleanedText)) {
         infoAlert("Caravana duplicada", "La caravana ya está en la sesión");
         return prev;
       }
@@ -81,45 +98,31 @@ export default function ReadingScreen({
       return [
         {
           id: Crypto.randomUUID(),
-          caravana: caravana,
+          caravana_id: cleanedText,
           sexo: sex,
-          observaciones: observation,
+          observaciones: "",
         },
         ...prev,
       ];
     });
-
-    setObservation("");
-    setShowObservationModal(false);
-
-    setTimeout(() => {
-      processingRef.current = false;
-      inputRef.current?.focus();
-    }, 100);
+    setCaravan("");
+    processingRef.current = false;
+    inputRef.current?.focus();
   };
 
-  const handleRead = () => {
+  const handleRead = (reading: string) => {
+    // Prevent multiple reads at the same time
     if (processingRef.current) return;
+
     processingRef.current = true;
 
-    setTimeout(() => {
-      const value = caravanaRef.current.trim();
-      caravanaRef.current = "";
+    if (reading.length === 0) {
+      processingRef.current = false;
+      inputRef.current?.focus();
+      return;
+    }
 
-      if (!value) {
-        processingRef.current = false;
-        return;
-      }
-
-      setCaravan("");
-
-      setTimeout(() => {
-        processingRef.current = false;
-        inputRef.current?.focus();
-      }, 100);
-
-      saveReading();
-    }, 100);
+    saveReading(reading);
   };
 
   const handleFinishSession = async () => {
@@ -142,6 +145,41 @@ export default function ReadingScreen({
     }
   };
 
+  const handleDelete = () => {
+    if (!selectedGanado) {
+      infoAlert("Error", "Seleccione un ganado");
+      return;
+    }
+
+    infoAlert("Confirmación", "¿Está seguro de eliminar este ganado?", [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: () => {
+          setReadings((prev) => prev.filter((g) => g.id !== selectedGanado.id));
+          setSelectedGanado(null);
+          setShowGanadoActions(false);
+        },
+      },
+    ]);
+  };
+
+  const handleEditData = (data: { sexo: string; observaciones: string }) => {
+    setSelectedGanado((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        ...data,
+        observaciones: data.observaciones,
+        sexo: data.sexo,
+      };
+    });
+  };
+
   return (
     <>
       <Modal visible={sessionActive} transparent={true}>
@@ -158,11 +196,13 @@ export default function ReadingScreen({
             onChangeText={(text) => {
               const cleanedText = text.replace(/\D/g, "");
               setCaravan(cleanedText);
-              caravanaRef.current = cleanedText;
             }}
-            onSubmitEditing={handleRead}
+            onSubmitEditing={(e) => {
+              handleRead(e.nativeEvent.text);
+            }}
             keyboardType="numeric"
             autoFocus
+            maxLength={20}
             placeholder="Esperando lectura..."
             style={styles.input}
           />
@@ -173,14 +213,13 @@ export default function ReadingScreen({
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => {
-                  setSelectedGanadoId(item.id);
-                  setShowObservationModal(true);
-                  setObservation(item.observaciones);
+                  setSelectedGanado(item);
+                  setShowGanadoActions(true);
                 }}
                 style={styles.row}
               >
                 <GanadoCard
-                  caravana={item.caravana}
+                  caravana={item.caravana_id}
                   sexo={item.sexo}
                   observaciones={item.observaciones}
                 />
@@ -188,12 +227,19 @@ export default function ReadingScreen({
             )}
           />
 
-          <ObservationModal
-            showObservationModal={showObservationModal}
-            onSave={saveReading}
-            observation={observation}
-            setObservation={setObservation}
-          />
+          {selectedGanado && (
+            <GanadoActions
+              showGanadoModal={showGanadoActions}
+              onSave={editGanado}
+              onDelete={handleDelete}
+              onClose={() => {
+                setShowGanadoActions(false);
+                setSelectedGanado(null);
+              }}
+              data={selectedGanado}
+              setData={handleEditData}
+            />
+          )}
 
           <Pressable style={styles.finishButton} onPress={handleFinishSession}>
             <Text style={styles.finishText}>Terminar Sesión</Text>
@@ -207,8 +253,8 @@ export default function ReadingScreen({
           setShowExportModal(false);
           setReadings([]);
         }}
-        data={readings.map(({ caravana, sexo, observaciones }) => ({
-          Caravana: caravana,
+        data={readings.map(({ caravana_id, sexo, observaciones }) => ({
+          Caravana: caravana_id,
           Sexo: sexo,
           Observaciones: observaciones,
         }))}
